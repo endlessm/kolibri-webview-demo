@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 import sqlalchemy
 import sys
@@ -9,6 +10,8 @@ gi.require_version('WebKit2', '4.0')  # noqa
 from gi.repository import GLib, Gio, Gtk, WebKit2
 
 from . import models
+
+logger = logging.getLogger(__name__)
 
 
 class WebViewApi(object):
@@ -59,7 +62,6 @@ class WebView(WebKit2.WebView):
     def resolveWebCall(self, manager, js_result):
         payload = json.loads(js_result.get_js_value().to_string())
         response_payload = self.web_view_api.dispatch(payload)
-        print(f'EosKnowledgeLib.resolveCall({json.dumps(response_payload)})')
 
         self.run_javascript(
             f'EosKnowledgeLib.resolveCall({json.dumps(response_payload)})',
@@ -79,14 +81,17 @@ class AppWindow(Gtk.ApplicationWindow):
 
 class Application(Gtk.Application):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, application_id="org.endlessm.kolibri_webview_demo", **kwargs)
+        super().__init__(*args, application_id="org.endlessm.kolibri_webview_demo",
+                         flags=Gio.ApplicationFlags.HANDLES_COMMAND_LINE, **kwargs)
         self.window = None
         self.session = None
+        self.channel_id = None
 
     def do_activate(self):
         # We only allow a single window and raise any existing ones
         if not self.window:
-            models.create_session('sqlite:////home/eor/.kolibri/content/databases/1ceff53605e55bef987d88e0908658c5.sqlite3')
+            models.create_session(
+                f'{GLib.get_home_dir()}/.kolibri/content/databases/{self.channel_id}.sqlite3')
             # Windows are associated with the application
             # when the last one is closed the application shuts down
             self.window = AppWindow(application=self, title="Main Window")
@@ -94,5 +99,11 @@ class Application(Gtk.Application):
         self.window.present()
 
     def do_command_line(self, command_line):
+        arguments = command_line.get_arguments()
+        if len(arguments) == 1:
+            logger.error('Missing channel_id')
+            return 1
+
+        self.channel_id = arguments[1]
         self.activate()
         return 0
