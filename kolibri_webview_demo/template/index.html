@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title></title>
+    <script>
+        function log (message) {
+            document.getElementById('log').innerHTML += message + '\n';
+        }
+
+        window.EosKnowledgeLib = {
+            callId: 1,
+            pendingCalls: {},
+
+            call: (func, args) => {
+                const payload = {
+                    func,
+                    args: args || {},
+                    callId: EosKnowledgeLib.callId,
+                };
+                EosKnowledgeLib.callId++;
+
+                return new Promise((resolve, reject) => {
+                    EosKnowledgeLib.pendingCalls[payload.callId.toString()] = {
+                        resolve,
+                        reject,
+                    };
+
+                    window.webkit.messageHandlers.eosKnowledgeLibCall.postMessage(
+                        JSON.stringify(payload)
+                    );
+                });
+            },
+
+            resolveCall: payload => {
+                const pendingCall = EosKnowledgeLib.pendingCalls[payload.callId.toString()];
+                if (!pendingCall) {
+                    return;
+                }
+
+                if (payload.error) {
+                    pendingCall.reject(payload.error);
+                } else {
+                    pendingCall.resolve(payload.result);
+                }
+            },
+
+            getMetadata: async () => {
+                let metadata = null;
+                try {
+                    metadata = await EosKnowledgeLib.call('get_metadata');
+                } catch (e) {
+                    metadata = e;
+                }
+                document.getElementById('content').innerHTML = JSON.stringify(metadata);
+            }
+        };
+
+    </script>
+</head>
+<body>
+    <h1>Test</h1>
+    <pre id="log"></pre>
+    <p id="content"></p>
+    <script>
+        EosKnowledgeLib.getMetadata();
+    </script>
+</body>
+</html>
