@@ -13,6 +13,13 @@ from . import models
 
 logger = logging.getLogger(__name__)
 
+KOLIBRI_DATA_DIR = os.environ.get('KOLIBRI_DATA_DIR')
+
+if KOLIBRI_DATA_DIR:
+    KOLIBRI_DATA_DIR = os.path.expanduser(KOLIBRI_DATA_DIR)
+else:
+    KOLIBRI_DATA_DIR = os.path.join(GLib.get_home_dir(), '.kolibri')
+
 
 class WebViewApi(object):
     def __init__(self):
@@ -90,8 +97,8 @@ class Application(Gtk.Application):
     def do_activate(self):
         # We only allow a single window and raise any existing ones
         if not self.window:
-            models.create_session(
-                f'{GLib.get_home_dir()}/.kolibri/content/databases/{self.channel_id}.sqlite3')
+            database_path = os.path.join(KOLIBRI_DATA_DIR, 'content', 'databases', f'{self.channel_id}.sqlite3')
+            models.create_session(database_path)
             # Windows are associated with the application
             # when the last one is closed the application shuts down
             self.window = AppWindow(application=self, title="Main Window")
