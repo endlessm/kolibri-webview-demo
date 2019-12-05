@@ -89,13 +89,8 @@ class Application(Gtk.Application):
     def do_activate(self):
         # We only allow a single window and raise any existing ones
         if not self.window:
-<<<<<<< HEAD
             database_path = os.path.join(KOLIBRI_DATA_DIR, 'content', 'databases', f'{self.channel_id}.sqlite3')
             models.create_session(database_path)
-=======
-            create_session(
-                f'{GLib.get_home_dir()}/.kolibri/content/databases/{self.channel_id}.sqlite3')
->>>>>>> Show channel content node tree
             # Windows are associated with the application
             # when the last one is closed the application shuts down
             self.window = AppWindow(application=self, title="Main Window")
