@@ -1,15 +1,17 @@
 import json
 import logging
 import os
+import re
 import sqlalchemy
 import sys
 
-import gi
-gi.require_version('Gtk', '3.0')  # noqa
-gi.require_version('WebKit2', '4.0')  # noqa
+# from django.conf import settings
+
 from gi.repository import GLib, Gio, Gtk, WebKit2
 
-from . import models
+from .models import create_session
+from .web_view_api import WebViewApi
+from . import utils
 
 logger = logging.getLogger(__name__)
 
@@ -21,40 +23,13 @@ else:
     KOLIBRI_DATA_DIR = os.path.join(GLib.get_home_dir(), '.kolibri')
 
 
-class WebViewApi(object):
-    def __init__(self):
-        from .models import session, Base
-        self.session = session
-        self.models = Base.classes
-
-    def dispatch(self, payload):
-        try:
-            func = payload['func']
-            kwargs = payload.get('args', {})
-            return {
-                'callId': payload['callId'],
-                'result': getattr(self, func)(**kwargs),
-            }
-        except Exception as e:
-            return {
-                'callId': payload['callId'],
-                'error': {
-                    'message': str(e),
-                    'type': e.__class__.__name__,
-                }
-            }
-
-    def get_metadata(self):
-        channelmetadata = self.session.query(self.models.content_channelmetadata).first()
-        return {
-            'name': channelmetadata.name,
-            'description': channelmetadata.description,
-        }
-
-
 class WebView(WebKit2.WebView):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        web_context = WebKit2.WebContext()
+        web_context.get_security_manager().register_uri_scheme_as_local('ekn')
+        web_context.register_uri_scheme('ekn', self.load_ekn_uri)
+
+        super().__init__(*args, web_context=web_context, **kwargs)
 
         self.web_view_api = WebViewApi()
 
@@ -63,8 +38,13 @@ class WebView(WebKit2.WebView):
         user_content_manager.connect('script-message-received::eosKnowledgeLibCall',
                                      self.resolveWebCall)
 
+        web_settings = self.get_settings()
+        web_settings.set_enable_developer_extras(True)
+        web_settings.set_enable_write_console_messages_to_stdout(True)
+        web_settings.set_javascript_can_access_clipboard(True)
+
         html = GLib.file_get_contents(os.path.dirname(__file__) + '/template/index.html').contents.decode('utf-8')
-        self.load_html(html)
+        self.load_html(html, 'ekn://home')
 
     def resolveWebCall(self, manager, js_result):
         payload = json.loads(js_result.get_js_value().to_string())
@@ -75,10 +55,22 @@ class WebView(WebKit2.WebView):
             None, None
         )
 
+    def load_ekn_uri(self, req):
+        match = re.match(r'^\/kolibri\/storage\/([a-zA-Z0-9\.]+)$', req.get_path())
+        if match:
+            file_path = utils.get_kolibri_storage_file_path(match.group(1))
+            file = Gio.File.new_for_path(file_path)
+            if file.query_exists():
+                content_type = file.query_info(
+                    Gio.FILE_ATTRIBUTE_STANDARD_CONTENT_TYPE,
+                    Gio.FileQueryInfoFlags.NONE, None).get_content_type()
+                print(file_path, content_type)
+                req.finish(file.read(), -1, content_type)
+
 
 class AppWindow(Gtk.ApplicationWindow):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs, default_width=720, default_height=640)
 
         webview = WebView()
 
@@ -97,8 +89,13 @@ class Application(Gtk.Application):
     def do_activate(self):
         # We only allow a single window and raise any existing ones
         if not self.window:
+<<<<<<< HEAD
             database_path = os.path.join(KOLIBRI_DATA_DIR, 'content', 'databases', f'{self.channel_id}.sqlite3')
             models.create_session(database_path)
+=======
+            create_session(
+                f'{GLib.get_home_dir()}/.kolibri/content/databases/{self.channel_id}.sqlite3')
+>>>>>>> Show channel content node tree
             # Windows are associated with the application
             # when the last one is closed the application shuts down
             self.window = AppWindow(application=self, title="Main Window")

@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <base href="ekn://home">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
@@ -41,31 +42,103 @@
                 }
 
                 if (payload.error) {
+                    console.error(
+                        `EosKnowledgeLib.WebViewAPI failed: ${JSON.stringify(payload.error)}`);
                     pendingCall.reject(payload.error);
                 } else {
                     pendingCall.resolve(payload.result);
                 }
             },
-
-            getMetadata: async () => {
-                let metadata = null;
-                try {
-                    metadata = await EosKnowledgeLib.call('get_metadata');
-                } catch (e) {
-                    metadata = e;
-                }
-                document.getElementById('content').innerHTML = JSON.stringify(metadata);
-            }
         };
-
     </script>
 </head>
 <body>
-    <h1>Test</h1>
+    <h1 id="channel_name"></h1>
+    <h2 id="channel_description"></h2>
+    <p id="content">
+        <h3 id="content_title"></h3>
+        <a href="#" id="content_goback">Go Back</a>
+        <ul id="content_node">
+
+        </ul>
+    </p>
+    <hr />
     <pre id="log"></pre>
-    <p id="content"></p>
+
     <script>
-        EosKnowledgeLib.getMetadata();
+        const breadcrumbs = [];
+
+        function renderTopic (node) {
+            return node.children.map(child => {
+                return `
+                    <li>
+                        <a href="#" data-content-node-id="${child.id}">${child.title}</a>
+                    </li>
+                `;
+            }).join('');
+        }
+
+        function renderVideo (node) {
+            if (!node.main_file || !node.main_file.available) {
+                return 'Content not available';
+            }
+
+            return `<video src="ekn:///kolibri/storage/${node.main_file.filename}"></video>`;
+        }
+
+        async function refreshContent () {
+            const node = await EosKnowledgeLib.call('get_content_node', {
+                content_node_id: breadcrumbs[breadcrumbs.length - 1],
+            });
+
+            document.getElementById('content_title').innerHTML = node.title;
+            document.getElementById('content_goback').style.display =
+                breadcrumbs.length === 1 ? 'none' : 'block';
+
+            let content = null;
+            switch (node.kind) {
+            case 'topic':
+                content = renderTopic(node);
+                break;
+
+            case 'video':
+                content = renderVideo(node);
+                break;
+
+            default:
+                content = `The content type <strong>${node.kind}</strong> is not supported`;
+                break;
+            }
+
+            document.getElementById('content_node').innerHTML = content;
+        }
+
+        async function main () {
+            const metadata = await EosKnowledgeLib.call('get_metadata');
+
+            document.getElementById('channel_name').innerHTML = metadata.name;
+            document.getElementById('channel_description').innerHTML = metadata.description;
+
+            document.getElementById('content_node').addEventListener('click', event => {
+                const contentNodeId = event.target.getAttribute('data-content-node-id');
+                if (contentNodeId) {
+                    breadcrumbs.push(contentNodeId);
+                    refreshContent();
+                    event.preventDefault();
+                }
+            });
+
+            document.getElementById('content_goback').addEventListener('click', event => {
+                breadcrumbs.pop();
+                refreshContent();
+                event.preventDefault();
+            });
+
+            breadcrumbs.push(metadata.id);
+            await refreshContent();
+        }
+
+        main();
     </script>
 </body>
 </html>
