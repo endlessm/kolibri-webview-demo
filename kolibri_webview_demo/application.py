@@ -76,7 +76,6 @@ class Application(Gtk.Application):
         super().__init__(*args, application_id="org.endlessm.kolibri_webview_demo",
                          flags=Gio.ApplicationFlags.HANDLES_COMMAND_LINE, **kwargs)
         self.window = None
-        self.session = None
         self.channel_id = None
 
     def do_activate(self):
