@@ -5,7 +5,7 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     package_data={
-        'kolibri_webview_demo': ['template/*']
+        'kolibri_webview_demo': ['static/*']
     },
     entry_points={
         'console_scripts': [

@@ -63,8 +63,10 @@ class WebView(WebKit2.WebView):
         user_content_manager.connect('script-message-received::eosKnowledgeLibCall',
                                      self.resolveWebCall)
 
-        html = GLib.file_get_contents(os.path.dirname(__file__) + '/template/index.html').contents.decode('utf-8')
-        self.load_html(html)
+        index_uri = f'file://{os.path.dirname(__file__)}/static/index.html'
+        index_file = Gio.file_new_for_uri(index_uri)
+        index_html = index_file.load_contents().contents.decode('utf-8')
+        self.load_html(index_html, index_uri)
 
     def resolveWebCall(self, manager, js_result):
         payload = json.loads(js_result.get_js_value().to_string())
