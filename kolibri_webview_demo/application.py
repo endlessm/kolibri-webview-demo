@@ -15,13 +15,6 @@ from . import utils
 
 logger = logging.getLogger(__name__)
 
-KOLIBRI_DATA_DIR = os.environ.get('KOLIBRI_DATA_DIR')
-
-if KOLIBRI_DATA_DIR:
-    KOLIBRI_DATA_DIR = os.path.expanduser(KOLIBRI_DATA_DIR)
-else:
-    KOLIBRI_DATA_DIR = os.path.join(GLib.get_home_dir(), '.kolibri')
-
 
 class WebView(WebKit2.WebView):
     def __init__(self, *args, **kwargs):
@@ -89,8 +82,13 @@ class Application(Gtk.Application):
     def do_activate(self):
         # We only allow a single window and raise any existing ones
         if not self.window:
-            database_path = os.path.join(KOLIBRI_DATA_DIR, 'content', 'databases', f'{self.channel_id}.sqlite3')
+            gvfs.init()
+
+            database_path = os.path.join(
+                utils.KOLIBRI_DATA_DIR, 'content', 'databases',
+                f'{self.channel_id}.sqlite3')
             create_session(database_path)
+
             # Windows are associated with the application
             # when the last one is closed the application shuts down
             self.window = AppWindow(application=self, title="Main Window")
