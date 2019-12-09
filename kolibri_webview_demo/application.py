@@ -5,8 +5,6 @@ import re
 import sqlalchemy
 import sys
 
-# from django.conf import settings
-
 from gi.repository import GLib, Gio, Gtk, WebKit2
 
 from .models import create_session
