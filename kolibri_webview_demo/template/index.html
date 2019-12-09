@@ -6,6 +6,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title></title>
+    <style>
+        .content-node-thumbnail {
+            max-width: 32px;
+        }
+
+        #pdf-canvas {
+            border: 1px solid black;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.3.200/pdf.min.js" integrity="sha256-J4Z8Fhj2MITUakMQatkqOVdtqodUlwHtQ/ey6fSsudE=" crossorigin="anonymous"></script>
+    <script>
+        // Loaded via <script> tag, create shortcut to access PDF.js exports.
+        const pdfjsLib = window['pdfjs-dist/build/pdf'];
+
+        // The workerSrc property shall be specified.
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.3.200/pdf.worker.min.js';
+    </script>
     <script>
         function log (message) {
             document.getElementById('log').innerHTML += message + '\n';
@@ -68,28 +85,72 @@
     <script>
         const breadcrumbs = [];
 
+        async function loadPdf (url) {
+            // Asynchronous download of PDF
+            const pdf = await pdfjsLib.getDocument(url).promise;
+            const page = await pdf.getPage(1);
+
+            const viewport = page.getViewport({ scale: 1.5 });
+
+            // Prepare canvas using PDF page dimensions
+            const canvas = document.getElementById('pdf-canvas');
+            const context = canvas.getContext('2d');
+            canvas.height = viewport.height;
+            canvas.width = viewport.width;
+
+            // Render PDF page into canvas context
+            return page.render({
+                canvasContext: context,
+                viewport: viewport
+            });
+        }
+
+        function isValidFile (file) {
+            return file && file.available
+        }
+
         function renderTopic (node) {
+            const kindCharacters = {
+                topic: '📁',
+                video: '🎬',
+                audio: '🎵',
+                document: '🖹',
+                html5: '🎲',
+            };
+
             return node.children.map(child => {
                 return `
                     <li>
-                        <a href="#" data-content-node-id="${child.id}">${child.title}</a>
+                        ${kindCharacters[child.kind] || ''}
+                        <a href="#" data-content-node-id="${child.id}">
+                            ${child.title}
+                        </a>
                     </li>
                 `;
             }).join('');
         }
 
         function renderVideo (node) {
-            if (!node.main_file || !node.main_file.available) {
-                return 'Content not available';
-            }
+            return `<video src="${node.main_file.file_uri}" controls="true"></video>`;
+        }
 
-            return `<video src="ekn:///kolibri/storage/${node.main_file.filename}"></video>`;
+        function renderAudio (node) {
+            return `<audio src="${node.main_file.file_uri}" controls="true"></audio>`;
+        }
+
+        function renderDocument (node) {
+            return `<canvas id="pdf-canvas"></canvas>`;
+        }
+
+        function renderHtml5 (node) {
+            return `<iframe src="${node.main_file.ekn_uri}" width="640" height="480" />`;
         }
 
         async function refreshContent () {
             const node = await EosKnowledgeLib.call('get_content_node', {
                 content_node_id: breadcrumbs[breadcrumbs.length - 1],
             });
+            console.log(node);
 
             document.getElementById('content_title').innerHTML = node.title;
             document.getElementById('content_goback').style.display =
@@ -102,7 +163,19 @@
                 break;
 
             case 'video':
-                content = renderVideo(node);
+                content = isValidFile(node.main_file) ? renderVideo(node) : null;
+                break;
+
+            case 'audio':
+                content = isValidFile(node.main_file) ? renderAudio(node) : null;
+                break;
+
+            case 'document':
+                content = isValidFile(node.main_file) ? renderDocument(node) : null;
+                break;
+
+            case 'html5':
+                content = isValidFile(node.main_file) ? renderHtml5(node) : null;
                 break;
 
             default:
@@ -110,7 +183,15 @@
                 break;
             }
 
+            if (!content) {
+                content = 'Content not available';
+            }
+
             document.getElementById('content_node').innerHTML = content;
+
+            if (node.kind === 'document' && isValidFile(node.main_file)) {
+                await loadPdf(node.main_file.ekn_uri);
+            }
         }
 
         async function main () {

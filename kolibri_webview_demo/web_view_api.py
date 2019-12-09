@@ -57,14 +57,15 @@ class WebViewApi(object):
         }
 
     def _file_to_json(self, file):
-        filename = f'{file.local_file_id}.{file.extension}'
+        filename = utils.get_kolibri_storage_file_path(f'{file.local_file_id}.{file.extension}')
         return {
             'id': file.id,
-            'filename': filename,
+            'file_uri': f'file://{filename}',
+            'ekn_uri': f'ekn:///kolibri/storage/{file.local_file_id}.{file.extension}',
             'preset': file.preset,
             'lang': file.lang_id,
             'file_size': file.file_size,
-            'available': os.path.isfile(utils.get_kolibri_storage_file_path(filename)),
+            'available': os.path.isfile(filename),
         }
 
     def get_content_node(self, content_node_id):

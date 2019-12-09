@@ -4,6 +4,7 @@ import os
 import re
 import sqlalchemy
 import sys
+import zipfile
 
 from gi.repository import GLib, Gio, Gtk, WebKit2
 
@@ -47,16 +48,30 @@ class WebView(WebKit2.WebView):
         )
 
     def load_ekn_uri(self, req):
-        match = re.match(r'^\/kolibri\/storage\/([a-zA-Z0-9\.]+)$', req.get_path())
+        match = re.match(
+            r'^\/kolibri\/storage\/([a-zA-Z0-9\.]+)([a-zA-Z0-9\.\/]+)?$',
+            req.get_path())
         if match:
             file_path = utils.get_kolibri_storage_file_path(match.group(1))
             file = Gio.File.new_for_path(file_path)
             if file.query_exists():
-                content_type = file.query_info(
-                    Gio.FILE_ATTRIBUTE_STANDARD_CONTENT_TYPE,
-                    Gio.FileQueryInfoFlags.NONE, None).get_content_type()
-                print(file_path, content_type)
-                req.finish(file.read(), -1, content_type)
+                print('load_ekn_uri', req.get_path(), file_path, match.group(1), match.group(2))
+                if os.path.splitext(match.group(1))[1] == '.zip':
+                    with zipfile.ZipFile(file_path) as zfile:
+                        zfile_member = 'index.html'
+                        if match.group(2) is not None:
+                            # TODO: Load relative HTML5 files
+                            # zfile_member = match.group(2).strip('/')
+                            pass
+
+                        input_stream = Gio.MemoryInputStream.new_from_bytes(
+                            GLib.Bytes(zfile.read(zfile_member)))
+                        req.finish(input_stream, -1, 'text/html')
+                else:
+                    content_type = file.query_info(
+                        Gio.FILE_ATTRIBUTE_STANDARD_CONTENT_TYPE,
+                        Gio.FileQueryInfoFlags.NONE, None).get_content_type()
+                    req.finish(file.read(), -1, content_type)
 
 
 class AppWindow(Gtk.ApplicationWindow):
