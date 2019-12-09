@@ -27,7 +27,7 @@ class WebView(WebKit2.WebView):
         user_content_manager = self.get_user_content_manager()
         user_content_manager.register_script_message_handler('eosKnowledgeLibCall')
         user_content_manager.connect('script-message-received::eosKnowledgeLibCall',
-                                     self.resolveWebCall)
+                                     self.resolve_web_call)
 
         web_settings = self.get_settings()
         web_settings.set_enable_developer_extras(True)
@@ -37,7 +37,7 @@ class WebView(WebKit2.WebView):
         html = GLib.file_get_contents(os.path.dirname(__file__) + '/template/index.html').contents.decode('utf-8')
         self.load_html(html, 'ekn://home')
 
-    def resolveWebCall(self, manager, js_result):
+    def resolve_web_call(self, manager, js_result):
         payload = json.loads(js_result.get_js_value().to_string())
         response_payload = self.web_view_api.dispatch(payload)
 
