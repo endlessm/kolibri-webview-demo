@@ -109,7 +109,7 @@
             return file && file.available
         }
 
-        function renderTopic (node) {
+        function renderNodeList (nodes) {
             const kindCharacters = {
                 topic: '📁',
                 video: '🎬',
@@ -118,7 +118,7 @@
                 html5: '🎲',
             };
 
-            return node.children.map(child => {
+            return nodes.map(child => {
                 return `
                     <li>
                         ${kindCharacters[child.kind] || ''}
@@ -128,6 +128,10 @@
                     </li>
                 `;
             }).join('');
+        }
+
+        function renderTopic (node) {
+            return renderNodeList(node.children);
         }
 
         function renderVideo (node) {
@@ -217,6 +221,15 @@
 
             breadcrumbs.push(metadata.id);
             await refreshContent();
+
+            window.addEventListener('ekn-update-search', async event => {
+                if (event.detail.query) {
+                    const result = await EosKnowledgeLib.call('search', event.detail);
+                    document.getElementById('content_node').innerHTML = renderNodeList(result.results);
+                } else {
+                    await refreshContent();
+                }
+            });
         }
 
         main();

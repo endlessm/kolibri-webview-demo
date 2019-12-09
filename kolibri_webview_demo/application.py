@@ -47,6 +47,16 @@ class WebView(WebKit2.WebView):
             None, None
         )
 
+    def update_search(self, query):
+        self.run_javascript(
+            'window.dispatchEvent(new CustomEvent(\'ekn-update-search\', {\n' +
+            '    detail: {\n' +
+            '        query: \'{}\',\n'.format(query) +
+            '    },\n' +
+            '}));',
+            None, None
+        )
+
     def load_ekn_uri(self, req):
         match = re.match(
             r'^\/kolibri\/storage\/([a-zA-Z0-9\.]+)([a-zA-Z0-9\.\/]+)?$',
@@ -74,14 +84,21 @@ class WebView(WebKit2.WebView):
                     req.finish(file.read(), -1, content_type)
 
 
-class AppWindow(Gtk.ApplicationWindow):
+@Gtk.Template(filename=f'{os.path.dirname(__file__)}/../data/ui/mainwindow.ui')
+class MainWindow(Gtk.ApplicationWindow):
+    __gtype_name__ = 'MainWindow'
+
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs, default_width=720, default_height=640)
+        super().__init__(*args, **kwargs, default_width=900, default_height=700)
 
-        webview = WebView()
+        self.webview = WebView()
 
-        self.add(webview)
-        webview.show()
+        self.add(self.webview)
+        self.webview.show()
+
+    @Gtk.Template.Callback()
+    def on_search_entry_search_changed(self, search_entry):
+        self.webview.update_search(search_entry.get_text())
 
 
 class Application(Gtk.Application):
@@ -103,7 +120,7 @@ class Application(Gtk.Application):
 
             # Windows are associated with the application
             # when the last one is closed the application shuts down
-            self.window = AppWindow(application=self, title="Main Window")
+            self.window = MainWindow(application=self, title="Main Window")
 
         self.window.present()
 

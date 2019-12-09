@@ -1,4 +1,6 @@
+import re
 import os
+import sqlalchemy
 
 from . import utils
 
@@ -98,3 +100,61 @@ class WebViewApi(object):
         result['children'] = list(map(self._content_node_to_json, children))
 
         return result
+
+    def search(self, query, **kwargs):
+        """
+        Inspired by the Kolibri search API (`ContentNodeSearchViewset`):
+
+        https://github.com/learningequality/kolibri/blob/develop/kolibri/core/content/api.py
+        """
+        MAX_RESULTS = 30
+
+        # all words with punctuation removed
+        all_words = [w for w in re.split('[?.,!";: ]', query) if w]
+
+        # TODO
+        # words in all_words that are not stopwords
+        # critical_words = [w for w in all_words if w not in stopwords_set]
+
+        # queries ordered by relevance priority
+        all_queries = [
+            sqlalchemy.and_(*[ContentNode.title.ilike(f'%{w}%') for w in all_words]),
+            # sqlalchemy.and_(*[ContentNode.title.ilike(f'%{w}%') for w in critical_words]),
+            sqlalchemy.and_(*[ContentNode.description.ilike(f'%{w}%') for w in all_words]),
+            # sqlalchemy.and_(*[ContentNode.description.ilike(f'%{w}%') for w in critical_words]),
+        ]
+
+        # # any critical word in title, reverse-sorted by word length
+        # for w in sorted(critical_words, key=len, reverse=True):
+        #     all_queries.append(Q(title__icontains=w))
+        # # any critical word in description, reverse-sorted by word length
+        # for w in sorted(critical_words, key=len, reverse=True):
+        #     all_queries.append(Q(description__icontains=w))
+
+        content_node_ids = []
+        content_ids = set()
+
+        for query in all_queries:
+            content_nodes = self.session.query(ContentNode.id, ContentNode.content_id) \
+                .filter(~ContentNode.content_id.in_(list(content_ids))) \
+                .filter(query) \
+                .limit(MAX_RESULTS * 2) \
+                .all()
+
+            for content_node in content_nodes:
+                if content_node.content_id not in content_ids:
+                    content_ids.add(content_node.content_id)
+                    content_node_ids.append(content_node.id)
+                    if len(content_node_ids) >= MAX_RESULTS:
+                        break
+
+            if len(content_node_ids) >= MAX_RESULTS:
+                break
+
+        nodes = self.session.query(ContentNode) \
+            .filter(ContentNode.id.in_(content_node_ids)) \
+            .all()
+
+        return {
+            'results': list(map(self._content_node_to_json, nodes)),
+        }
