@@ -44,8 +44,7 @@ class WebView(WebKit2.WebView):
 
         self.run_javascript(
             f'EosKnowledgeLib.resolveCall({json.dumps(response_payload)})',
-            None, None
-        )
+            None, None)
 
     def update_search(self, query):
         self.run_javascript(
@@ -54,8 +53,18 @@ class WebView(WebKit2.WebView):
             '        query: \'{}\',\n'.format(query) +
             '    },\n' +
             '}));',
-            None, None
-        )
+            None, None)
+
+    def go_back(self):
+        pass
+
+    def go_forward(self):
+        pass
+
+    def go_home(self):
+        self.run_javascript(
+            'window.dispatchEvent(new CustomEvent(\'ekn-go-home\'));',
+            None, None)
 
     def load_ekn_uri(self, req):
         match = re.match(
@@ -99,6 +108,18 @@ class MainWindow(Gtk.ApplicationWindow):
     @Gtk.Template.Callback()
     def on_search_entry_search_changed(self, search_entry):
         self.webview.update_search(search_entry.get_text())
+
+    @Gtk.Template.Callback()
+    def on_button_go_back_clicked(self, *args):
+        self.webview.go_back()
+
+    @Gtk.Template.Callback()
+    def on_button_go_forward_clicked(self, *args):
+        self.webview.go_forward()
+
+    @Gtk.Template.Callback()
+    def on_button_go_home_clicked(self, *args):
+        self.webview.go_home()
 
 
 class Application(Gtk.Application):

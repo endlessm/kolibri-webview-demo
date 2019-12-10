@@ -83,7 +83,7 @@
     <pre id="log"></pre>
 
     <script>
-        const breadcrumbs = [];
+        let breadcrumbs = [];
 
         async function loadPdf (url) {
             // Asynchronous download of PDF
@@ -229,6 +229,11 @@
                 } else {
                     await refreshContent();
                 }
+            });
+
+            window.addEventListener('ekn-go-home', event => {
+                breadcrumbs = [breadcrumbs[0]];
+                refreshContent();
             });
         }
 
