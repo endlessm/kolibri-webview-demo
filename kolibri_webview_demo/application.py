@@ -35,7 +35,9 @@ class WebView(WebKit2.WebView):
         web_settings.set_enable_write_console_messages_to_stdout(True)
         web_settings.set_javascript_can_access_clipboard(True)
 
-        html = GLib.file_get_contents(os.path.dirname(__file__) + '/data/template/index.html').contents.decode('utf-8')
+        html = GLib.file_get_contents(
+            os.path.join(os.path.dirname(__file__), 'data/template/index.html')
+        ).contents.decode('utf-8')
         self.load_html(html, 'ekn://home')
 
     def resolve_web_call(self, manager, js_result):
@@ -93,40 +95,41 @@ class WebView(WebKit2.WebView):
                     req.finish(file.read(), -1, content_type)
 
 
-@Gtk.Template(filename=os.path.join(os.path.dirname(__file__), 'data/ui/mainwindow.ui'))
 class MainWindow(Gtk.ApplicationWindow):
     __gtype_name__ = 'MainWindow'
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs, default_width=900, default_height=700)
 
-        self.webview = WebView()
+        builder = Gtk.Builder.new_from_file(
+            os.path.join(os.path.dirname(__file__), 'data/ui/mainwindow.ui')
+        )
+        builder.connect_signals(self)
 
+        self.set_titlebar(builder.get_object('header_bar'))
+
+        self.webview = WebView()
         self.add(self.webview)
         self.webview.show()
 
-    @Gtk.Template.Callback()
     def on_search_entry_search_changed(self, search_entry):
         self.webview.update_search(search_entry.get_text())
 
-    @Gtk.Template.Callback()
     def on_button_go_back_clicked(self, *args):
         self.webview.go_back()
 
-    @Gtk.Template.Callback()
     def on_button_go_forward_clicked(self, *args):
         self.webview.go_forward()
 
-    @Gtk.Template.Callback()
     def on_button_go_home_clicked(self, *args):
         self.webview.go_home()
 
 
 class Application(Gtk.Application):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, application_id="org.endlessm.kolibri_webview_demo",
+        super().__init__(*args, application_id="com.endlessm.KolibriWebViewDemo",
                          flags=Gio.ApplicationFlags.HANDLES_COMMAND_LINE, **kwargs)
-        self.window = None
+        self.main_window = None
         self.channel_id = None
 
     def do_activate(self):
@@ -142,9 +145,9 @@ class Application(Gtk.Application):
 
             # Windows are associated with the application
             # when the last one is closed the application shuts down
-            self.window = MainWindow(application=self, title="Main Window")
+            self.main_window = MainWindow(application=self, title="Main Window")
 
-        self.window.present()
+        self.main_window.present()
 
     def do_command_line(self, command_line):
         arguments = command_line.get_arguments()

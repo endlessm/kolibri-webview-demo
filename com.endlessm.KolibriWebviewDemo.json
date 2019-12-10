@@ -4,7 +4,10 @@
 	"runtime-version": "5",
 	"sdk": "com.endlessm.apps.Sdk",
 	"finish-args": [
-		"--share=network",
+        "--share=ipc",
+        "--socket=x11",
+        "--socket=wayland",
+        "--share=network",
 		"--filesystem=/var/lib/kolibri/data"
 	],
 	"command": "kolibri_webview_demo",
