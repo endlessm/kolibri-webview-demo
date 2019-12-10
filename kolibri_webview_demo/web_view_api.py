@@ -59,11 +59,17 @@ class WebViewApi(object):
         }
 
     def _file_to_json(self, file):
-        filename = utils.get_kolibri_storage_file_path(f'{file.local_file_id}.{file.extension}')
+        filename = utils.get_kolibri_storage_file_path(
+            '{id}.{extension}'.format(
+                id=file.local_file_id, extension=file.extension
+            )
+        )
         return {
             'id': file.id,
-            'file_uri': f'file://{filename}',
-            'ekn_uri': f'ekn:///kolibri/storage/{file.local_file_id}.{file.extension}',
+            'file_uri': 'file://{filename}'.format(filename=filename),
+            'ekn_uri': 'ekn:///kolibri/storage/{id}.{extension}'.format(
+                id=file.local_file_id, extension=file.extension
+            ),
             'preset': file.preset,
             'lang': file.lang_id,
             'file_size': file.file_size,
@@ -118,10 +124,10 @@ class WebViewApi(object):
 
         # queries ordered by relevance priority
         all_queries = [
-            sqlalchemy.and_(*[ContentNode.title.ilike(f'%{w}%') for w in all_words]),
-            # sqlalchemy.and_(*[ContentNode.title.ilike(f'%{w}%') for w in critical_words]),
-            sqlalchemy.and_(*[ContentNode.description.ilike(f'%{w}%') for w in all_words]),
-            # sqlalchemy.and_(*[ContentNode.description.ilike(f'%{w}%') for w in critical_words]),
+            sqlalchemy.and_(*[ContentNode.title.ilike('%{w}%'.format(w=w)) for w in all_words]),
+            # sqlalchemy.and_(*[ContentNode.title.ilike('%{w}%'.format(w=w)) for w in critical_words]),
+            sqlalchemy.and_(*[ContentNode.description.ilike('%{w}%'.format(w=w)) for w in all_words]),
+            # sqlalchemy.and_(*[ContentNode.description.ilike('%{w}%'.format(w=w)) for w in critical_words]),
         ]
 
         # # any critical word in title, reverse-sorted by word length

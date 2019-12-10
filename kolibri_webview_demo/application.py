@@ -43,14 +43,14 @@ class WebView(WebKit2.WebView):
         response_payload = self.web_view_api.dispatch(payload)
 
         self.run_javascript(
-            f'EosKnowledgeLib.resolveCall({json.dumps(response_payload)})',
+            'EosKnowledgeLib.resolveCall({json})'.format(json=json.dumps(response_payload)),
             None, None)
 
     def update_search(self, query):
         self.run_javascript(
             'window.dispatchEvent(new CustomEvent(\'ekn-update-search\', {\n' +
             '    detail: {\n' +
-            '        query: \'{}\',\n'.format(query) +
+            '        query: \'{query}\',\n'.format(query=query) +
             '    },\n' +
             '}));',
             None, None)
@@ -93,7 +93,7 @@ class WebView(WebKit2.WebView):
                     req.finish(file.read(), -1, content_type)
 
 
-@Gtk.Template(filename=f'{os.path.dirname(__file__)}/data/ui/mainwindow.ui')
+@Gtk.Template(filename=os.path.join(os.path.dirname(__file__), 'data/ui/mainwindow.ui'))
 class MainWindow(Gtk.ApplicationWindow):
     __gtype_name__ = 'MainWindow'
 
@@ -135,8 +135,9 @@ class Application(Gtk.Application):
             gvfs.init()
 
             database_path = os.path.join(
-                utils.KOLIBRI_DATA_DIR, 'content', 'databases',
-                f'{self.channel_id}.sqlite3')
+                utils.KOLIBRI_DATA_DIR,
+                'content/databases/{id}.sqlite3'.format(id=self.channel_id)
+            )
             create_session(database_path)
 
             # Windows are associated with the application

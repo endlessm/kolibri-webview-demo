@@ -1,0 +1,54 @@
+{
+	"app-id": "com.endlessm.KolibriWebViewDemo",
+	"runtime": "com.endlessm.apps.Platform",
+	"runtime-version": "5",
+	"sdk": "com.endlessm.apps.Sdk",
+	"finish-args": [
+		"--share=network",
+		"--filesystem=/var/lib/kolibri/data"
+	],
+	"command": "kolibri_webview_demo",
+	"modules": [
+		{
+			"name": "python3-SQLAlchemy",
+			"buildsystem": "simple",
+			"build-commands": [
+                "pip3 install --prefix=${FLATPAK_DEST} --ignore-installed --no-index --find-links=\"file://${PWD}\" SQLAlchemy-1.3.11.tar.gz"
+			],
+			"sources": [
+                {
+                    "type": "file",
+                    "url": "https://files.pythonhosted.org/packages/34/5c/0e1d7ad0ca52544bb12f9cb8d5cc454af45821c92160ffedd38db0a317f6/SQLAlchemy-1.3.11.tar.gz",
+                    "sha256": "afa5541e9dea8ad0014251bc9d56171ca3d8b130c9627c6cb3681cff30be3f8a"
+                }
+			]
+		},
+		{
+			"name": "kolibri_webview_demo",
+			"buildsystem": "simple",
+			"build-commands": [
+				"pip3 install --prefix=${FLATPAK_DEST} --no-deps ."
+			],
+			"sources": [
+				{
+					"type": "dir",
+					"path": "."
+				}
+			]
+		},
+		{
+			"name": "desktop",
+			"buildsystem": "simple",
+			"build-commands": [
+				"install -Dm644 com.endlessm.KolibriWebViewDemo.metainfo.xml /app/share/metainfo/com.endlessm.KolibriWebViewDemo.metainfo.xml",
+				"install -Dm644 com.endlessm.KolibriWebViewDemo.desktop /app/share/applications/com.endlessm.KolibriWebViewDemo.desktop"
+			],
+			"sources": [
+				{
+					"type": "dir",
+					"path": "desktop"
+				}
+			]
+		}
+	]
+}

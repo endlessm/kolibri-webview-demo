@@ -14,7 +14,7 @@ setup(
     },
     python_requires='>=3.6',
     install_requires=[
-        'PyGObject>=3.34.0',
+        'PyGObject>=3.28.0',
         'SQLAlchemy>=1.3.11',
     ]
 )

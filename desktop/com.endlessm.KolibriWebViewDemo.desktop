@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Terminal=false
+Name=Kolibri WebView Demo
+Comment=Native Kolibri viewer prototype
+Keywords=education;multimedia;videos;learning;quiz;
+Categories=Education;
+Exec=kolibri_webview_demo

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>com.endlessm.KolibriWebViewDemo</id>
+  <name>Kolibri WebView Demo</name>
+  <developer_name>Endless</developer_name>
+  <summary>Offline education technology platform</summary>
+  <metadata_license>CC0-1.0</metadata_license>
+  <description>
+    <p>Demo of a Gtk+ based app that uses a webview to display content and a local Kolibri database as source of content.</p>
+  </description>
+  <launchable type="desktop-id">com.endlessm.KolibriWebViewDemo.desktop</launchable>
+  <content_rating type="oars-1.1" />
+</component>
