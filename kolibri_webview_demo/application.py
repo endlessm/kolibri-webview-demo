@@ -14,16 +14,18 @@ from . import utils
 
 logger = logging.getLogger(__name__)
 
+APPLICATION_NAME = "Kolibri WebView Demo"
+
 
 class WebView(WebKit2.WebView):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, main_window, *args, **kwargs):
         web_context = WebKit2.WebContext()
         web_context.get_security_manager().register_uri_scheme_as_local('ekn')
         web_context.register_uri_scheme('ekn', self.load_ekn_uri)
 
         super().__init__(*args, web_context=web_context, **kwargs)
 
-        self.web_view_api = WebViewApi()
+        self.web_view_api = WebViewApi(main_window)
 
         user_content_manager = self.get_user_content_manager()
         user_content_manager.register_script_message_handler('eosKnowledgeLibCall')
@@ -106,11 +108,28 @@ class MainWindow(Gtk.ApplicationWindow):
         )
         builder.connect_signals(self)
 
-        self.set_titlebar(builder.get_object('header_bar'))
+        self.header_bar = builder.get_object('header_bar')
+        self.set_titlebar(self.header_bar)
+        self.set_title(APPLICATION_NAME)
 
-        self.webview = WebView()
-        self.add(self.webview)
+        self.main_vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.add(self.main_vbox)
+        self.main_vbox.show()
+
+        self.search_bar = builder.get_object('search_bar')
+        self.main_vbox.pack_start(self.search_bar, False, False, 0)
+        self.search_bar.show()
+
+        self.search_button = builder.get_object('button_search')
+        self.search_entry = builder.get_object('search_entry')
+
+        self.webview = WebView(self)
+        self.main_vbox.pack_end(self.webview, True, True, 0)
         self.webview.show()
+
+    def toggle_search(self):
+        toggled = self.search_button.get_active()
+        self.search_button.set_active(not toggled)
 
     def on_search_entry_search_changed(self, search_entry):
         self.webview.update_search(search_entry.get_text())
@@ -124,6 +143,23 @@ class MainWindow(Gtk.ApplicationWindow):
     def on_button_go_home_clicked(self, *args):
         self.webview.go_home()
 
+    def on_button_search_toggled(self, *args):
+        toggled = self.search_button.get_active()
+        self.search_bar.set_reveal_child(toggled)
+        self.search_entry.set_text('')
+        if toggled:
+            self.search_entry.grab_focus()
+    
+    def on_search_entry_stop_search(self, *args):
+        self.search_button.set_active(False)
+
+    def set_header_title(self, title, subtitle=None):
+        if not title:
+            title = APPLICATION_NAME
+            subtitle = None
+        self.header_bar.set_title(title)
+        self.header_bar.set_subtitle(subtitle)
+
 
 class Application(Gtk.Application):
     def __init__(self, *args, **kwargs):
@@ -133,14 +169,19 @@ class Application(Gtk.Application):
         self.channel_id = None
 
         quit_action = Gio.SimpleAction.new('quit', None)
-        quit_action.connect('activate', self.on_quit_activate)
+        quit_action.connect('activate', self.on_quit_action_activate)
         self.add_action(quit_action)
         self.set_accels_for_action('app.quit', ['<Primary>q'])
 
+        search_action = Gio.SimpleAction.new('search', None)
+        search_action.connect('activate', self.on_search_action_activate)
+        self.add_action(search_action)
+        self.set_accels_for_action('app.search', ['<Primary>f'])
+
     def do_activate(self):
         # We only allow a single window and raise any existing ones
-        if not self.window:
-            gvfs.init()
+        if not self.main_window:
+            # gvfs.init()
 
             database_path = os.path.join(
                 utils.KOLIBRI_DATA_DIR,
@@ -150,7 +191,7 @@ class Application(Gtk.Application):
 
             # Windows are associated with the application
             # when the last one is closed the application shuts down
-            self.main_window = MainWindow(application=self, title="Main Window")
+            self.main_window = MainWindow(application=self)
 
         self.main_window.present()
 
@@ -163,6 +204,10 @@ class Application(Gtk.Application):
         self.channel_id = arguments[1]
         self.activate()
         return 0
-    
-    def on_quit_activate(self, action, param):
+
+    def on_quit_action_activate(self, action, param):
         self.quit()
+
+    def on_search_action_activate(self, action, param):
+        if self.main_window:
+            self.main_window.toggle_search()

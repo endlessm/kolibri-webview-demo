@@ -10,7 +10,9 @@ File = None
 
 
 class WebViewApi(object):
-    def __init__(self):
+    def __init__(self, main_window):
+        self.__main_window = main_window
+
         global ChannelMetadata, ContentNode, File
 
         from .models import session, Base
@@ -45,6 +47,9 @@ class WebViewApi(object):
             'name': channel_metadata.name,
             'description': channel_metadata.description,
         }
+
+    def set_header_title(self, **kwargs):
+        self.__main_window.set_header_title(**kwargs)
 
     def _content_node_to_json(self, content_node):
         return {

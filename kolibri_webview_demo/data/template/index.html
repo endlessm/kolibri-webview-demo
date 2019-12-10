@@ -85,6 +85,8 @@
     <script>
         let breadcrumbs = [];
 
+        let header_title = {};
+
         async function loadPdf (url) {
             // Asynchronous download of PDF
             const pdf = await pdfjsLib.getDocument(url).promise;
@@ -157,6 +159,13 @@
             console.log(node);
 
             document.getElementById('content_title').innerHTML = node.title;
+            if (node.title != header_title['title']) {
+                header_title['subtitle'] = node.title;
+            } else {
+                header_title['subtitle'] = undefined;
+            }
+            await EosKnowledgeLib.call('set_header_title', header_title);
+
             document.getElementById('content_goback').style.display =
                 breadcrumbs.length === 1 ? 'none' : 'block';
 
@@ -202,6 +211,10 @@
             const metadata = await EosKnowledgeLib.call('get_metadata');
 
             document.getElementById('channel_name').innerHTML = metadata.name;
+            header_title['title'] = metadata.name;
+            header_title['subtitle'] = undefined;
+            await EosKnowledgeLib.call('set_header_title', header_title);
+
             document.getElementById('channel_description').innerHTML = metadata.description;
 
             document.getElementById('content_node').addEventListener('click', event => {
