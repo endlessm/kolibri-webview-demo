@@ -127,10 +127,15 @@ class MainWindow(Gtk.ApplicationWindow):
 
 class Application(Gtk.Application):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, application_id="com.endlessm.KolibriWebViewDemo",
+        super().__init__(*args, application_id='com.endlessm.KolibriWebViewDemo',
                          flags=Gio.ApplicationFlags.HANDLES_COMMAND_LINE, **kwargs)
         self.main_window = None
         self.channel_id = None
+
+        quit_action = Gio.SimpleAction.new('quit', None)
+        quit_action.connect('activate', self.on_quit_activate)
+        self.add_action(quit_action)
+        self.set_accels_for_action('app.quit', ['<Primary>q'])
 
     def do_activate(self):
         # We only allow a single window and raise any existing ones
@@ -158,3 +163,6 @@ class Application(Gtk.Application):
         self.channel_id = arguments[1]
         self.activate()
         return 0
+    
+    def on_quit_activate(self, action, param):
+        self.quit()
