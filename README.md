@@ -8,9 +8,12 @@ First, you have to install Kolibri and import a channel, then you need the chann
 
 I was not able to run the app in a virtualenv, but the only requirement you need is PyGObject and SQLAlchemy. Once those are visible in your Python environment just run:
 
-```
-python3 -m kolibri_webview_demo <channel_id>
-```
+    python3 -m kolibri_webview_demo <channel_id>
+
+Alternatively, you can build and install the application as a Flatpak:
+
+    flatpak-builder --install --user build com.endlessm.KolibriWebViewDemo.json
+    flatpak run com.endlessm.KolibriWebViewDemo <channel_id>
 
 ## Architecture
 
