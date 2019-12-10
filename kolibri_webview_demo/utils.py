@@ -2,7 +2,7 @@ import os
 
 from gi.repository import GLib
 
-KOLIBRI_DATA_DIR = os.environ.get('KOLIBRI_DATA_DIR')
+KOLIBRI_DATA_DIR = os.environ.get('KOLIBRI_HOME')
 
 if KOLIBRI_DATA_DIR:
     KOLIBRI_DATA_DIR = os.path.expanduser(KOLIBRI_DATA_DIR)

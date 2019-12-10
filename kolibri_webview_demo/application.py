@@ -35,7 +35,7 @@ class WebView(WebKit2.WebView):
         web_settings.set_enable_write_console_messages_to_stdout(True)
         web_settings.set_javascript_can_access_clipboard(True)
 
-        html = GLib.file_get_contents(os.path.dirname(__file__) + '/template/index.html').contents.decode('utf-8')
+        html = GLib.file_get_contents(os.path.dirname(__file__) + '/data/template/index.html').contents.decode('utf-8')
         self.load_html(html, 'ekn://home')
 
     def resolve_web_call(self, manager, js_result):
@@ -93,7 +93,7 @@ class WebView(WebKit2.WebView):
                     req.finish(file.read(), -1, content_type)
 
 
-@Gtk.Template(filename=f'{os.path.dirname(__file__)}/../data/ui/mainwindow.ui')
+@Gtk.Template(filename=f'{os.path.dirname(__file__)}/data/ui/mainwindow.ui')
 class MainWindow(Gtk.ApplicationWindow):
     __gtype_name__ = 'MainWindow'
 
