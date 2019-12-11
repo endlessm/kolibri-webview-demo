@@ -238,6 +238,8 @@
             window.addEventListener('ekn-update-search', async event => {
                 if (event.detail.query) {
                     const result = await EosKnowledgeLib.call('search', event.detail);
+                    header_title['subtitle'] = undefined;
+                    await EosKnowledgeLib.call('set_header_title', header_title);
                     document.getElementById('content_node').innerHTML = renderNodeList(result.results);
                 } else {
                     await refreshContent();
