@@ -25,7 +25,7 @@
             border: 1px solid black;
         }
 
-        .channel-detail {
+        .channel-detail-wrapper {
             background-color: #4d6b86;
             color: #f2f2f2;
             box-shadow: inset 0 0 6rem rgba(0, 0, 0, 0.3);
@@ -37,13 +37,13 @@
             user-select: auto;
         }
 
-        .channel-detail h1 {
+        .channel-detail-wrapper h1 {
             display: none;
             padding: 1rem 2rem 0 2rem;
             margin: 0;
         }
 
-        .channel-detail p {
+        .channel-detail-wrapper p {
             display: block;
             padding: 1rem 2rem;
             margin: 0;
@@ -51,37 +51,110 @@
             font-weight: 600;
         }
 
-        .node-content {
+        .node-content-wrapper {
             display: block;
-            padding: 1rem 2rem;
+            padding: 0;
             -webkit-user-select: auto;
             user-select: auto;
         }
         
-        .node-content h2 {
-            margin-top: 0;
+        .node-title-wrapper {
+            display: block;
+            margin: 0;
+            padding: 1rem 1.5rem;
+            border-bottom: dotted 1px;
         }
 
-        .node .channel-detail {
+        .node-title-wrapper h2 {
+            margin: 0;
+            font-family: serif;
+            font-size: 1.2em;
+        }
+
+        .node-title-wrapper .node-breadcrumbs-list {
+            display: flex;
+            flex-direction: row;
+            margin-top: 0.5rem;
+        }
+
+        .node-title-wrapper .node-breadcrumb {
+            display: block;
+            flex-grow: 0;
+            color: inherit;
+        }
+
+        .node .node-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1rem 2rem;
+        }
+
+        .node--toplevel .node-content {
+        }
+
+        .node--toplevel .node-title-wrapper {
+            display: none;
+        }
+
+        .node--topic .node-content {
+        }
+
+        .node--video .node-content {
+        }
+
+        .node--video .node-content video {
+            margin: 0 -1rem;
+            width: 100%;
+            height: auto;
+        }
+
+        .node--audio .node-content {
+        }
+
+        .node--document .node-content {
+        }
+
+        .node--html5 .node-content {
+        }
+
+        .node .channel-detail-wrapper {
             visibility: hidden;
             opacity: 0;
             height: 0;
+            /* transform: translateY(-100%); */
             transition: all 300ms ease-out;
         }
 
-        .node--toplevel .channel-detail {
+        .node--toplevel .channel-detail-wrapper {
             visibility: visible;
             opacity: 1;
             height: 12rem;
+            /* transform: translateY(0); */
         }
 
         .node {
             background-color: #f9f9f9;
+            color: #333;
             transition: all 300ms ease-out;
         }
 
         .node--toplevel {
             background-color: #e1e1e7;
+        }
+
+        .node--video {
+            background-color: #191919;
+            color: #f2f2f2;
+        }
+
+        .node .node-title-wrapper {
+            border-color: #c8c8c8;
+            transition: all 300ms ease-out;
+        }
+
+        .node--video .node-title-wrapper {
+            border-color: #5f5f5f;
         }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.3.200/pdf.min.js" integrity="sha256-J4Z8Fhj2MITUakMQatkqOVdtqodUlwHtQ/ey6fSsudE=" crossorigin="anonymous"></script>
@@ -139,16 +212,19 @@
     </script>
 </head>
 <body class="node node--toplevel">
-    <div class="channel-detail">
+    <div class="channel-detail-wrapper">
         <h1 id="channel-name"></h1>
         <p id="channel-description"></p>
     </div>
 
-    <div class="node-content">
-        <h2 id="content_title"></h2>
-        <a href="#" id="content_goback">Go Back</a>
-        <ul id="content_node">
-        </ul>
+    <div class="node-content-wrapper">
+        <div id="node_title_wrapper" class="node-title-wrapper">
+            <h2 id="content_title"></h2>
+            <div class="node-breadcrumbs-list">
+                <a href="#" id="content_goback" class="node-breadcrumb">Go Back</a>
+            </div>
+        </div>
+        <div id="node_content" class="node-content"></div>
     </div>
 
     <hr />
@@ -196,7 +272,7 @@
                 html5: '🎲',
             };
 
-            return nodes.map(child => {
+            const listInner = nodes.map(child => {
                 return `
                     <li>
                         ${kindCharacters[child.kind] || ''}
@@ -206,6 +282,8 @@
                     </li>
                 `;
             }).join('');
+
+            return `<ul>${listInner}</ul>`;
         }
 
         function renderTopic (node) {
@@ -230,12 +308,13 @@
 
         async function renderSearch (result) {
             await EosKnowledgeLib.call('set_header_title', {'title': channel_name, 'subtitle': null});
+            document.getElementById('content_title').innerHTML = "Search results";
 
             document.body.classList.remove(...document.body.classList);
             document.body.classList.add('node');
             document.body.classList.add('node--search');
 
-            document.getElementById('content_node').innerHTML = renderNodeList(result.results);
+            document.getElementById('node_content').innerHTML = renderNodeList(result.results);
         }
 
         async function refreshContent () {
@@ -285,6 +364,7 @@
 
             case 'html5':
                 content = isValidFile(node.main_file) ? renderHtml5(node) : null;
+                document.body.classList.add('node--html5');
                 break;
 
             default:
@@ -296,7 +376,7 @@
                 content = 'Content not available';
             }
 
-            document.getElementById('content_node').innerHTML = content;
+            document.getElementById('node_content').innerHTML = content;
 
             if (node.kind === 'document' && isValidFile(node.main_file)) {
                 await loadPdf(node.main_file.ekn_uri);
@@ -316,7 +396,7 @@
 
             document.getElementById('channel-description').innerHTML = metadata.description;
 
-            document.getElementById('content_node').addEventListener('click', event => {
+            document.getElementById('node_content').addEventListener('click', event => {
                 const contentNodeId = event.target.getAttribute('data-content-node-id');
                 if (contentNodeId) {
                     breadcrumbs.push(contentNodeId);
