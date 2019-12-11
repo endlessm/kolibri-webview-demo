@@ -11,6 +11,10 @@
             padding: 0;
             margin: 0;
             font-family: Cantarell;
+            -webkit-user-select: none;
+            user-select: none;
+            display: flex;
+            flex-direction: column;
         }
 
         .content-node-thumbnail {
@@ -26,6 +30,11 @@
             color: #f2f2f2;
             box-shadow: inset 0 0 6rem rgba(0, 0, 0, 0.3);
             padding: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            -webkit-user-select: auto;
+            user-select: auto;
         }
 
         .channel-detail h1 {
@@ -45,10 +54,34 @@
         .node-content {
             display: block;
             padding: 1rem 2rem;
+            -webkit-user-select: auto;
+            user-select: auto;
         }
         
-        .node-content h3 {
+        .node-content h2 {
             margin-top: 0;
+        }
+
+        .node .channel-detail {
+            visibility: hidden;
+            opacity: 0;
+            height: 0;
+            transition: all 300ms ease-out;
+        }
+
+        .node--toplevel .channel-detail {
+            visibility: visible;
+            opacity: 1;
+            height: 12rem;
+        }
+
+        .node {
+            background-color: #f9f9f9;
+            transition: all 300ms ease-out;
+        }
+
+        .node--toplevel {
+            background-color: #e1e1e7;
         }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.3.200/pdf.min.js" integrity="sha256-J4Z8Fhj2MITUakMQatkqOVdtqodUlwHtQ/ey6fSsudE=" crossorigin="anonymous"></script>
@@ -105,19 +138,17 @@
         };
     </script>
 </head>
-<body>
-    <div class="container container--channel">
-        <div class="channel-detail">
-            <h1 id="channel-name"></h1>
-            <p id="channel-description"></p>
-        </div>
+<body class="node node--toplevel">
+    <div class="channel-detail">
+        <h1 id="channel-name"></h1>
+        <p id="channel-description"></p>
+    </div>
 
-        <div class="node-content">
-            <h3 id="content_title"></h3>
-            <a href="#" id="content_goback">Go Back</a>
-            <ul id="content_node">
-            </ul>
-        </div>
+    <div class="node-content">
+        <h2 id="content_title"></h2>
+        <a href="#" id="content_goback">Go Back</a>
+        <ul id="content_node">
+        </ul>
     </div>
 
     <hr />
@@ -127,6 +158,9 @@
     <script>
         let breadcrumbs = [];
 
+        let top_node_id = undefined;
+
+        let channel_name = undefined;
         let header_title = {};
 
         async function loadPdf (url) {
@@ -194,19 +228,35 @@
             return `<iframe src="${node.main_file.ekn_uri}" width="640" height="480" />`;
         }
 
+        async function renderSearch (result) {
+            await EosKnowledgeLib.call('set_header_title', {'title': channel_name, 'subtitle': null});
+
+            document.body.classList.remove(...document.body.classList);
+            document.body.classList.add('node');
+            document.body.classList.add('node--search');
+
+            document.getElementById('content_node').innerHTML = renderNodeList(result.results);
+        }
+
         async function refreshContent () {
             const node = await EosKnowledgeLib.call('get_content_node', {
                 content_node_id: breadcrumbs[breadcrumbs.length - 1],
             });
-            console.log(node);
+            console.log(JSON.stringify(node, null, 4));
 
-            document.getElementById('content_title').innerHTML = node.title;
-            if (node.title != header_title['title']) {
-                header_title['subtitle'] = node.title;
-            } else {
-                header_title['subtitle'] = undefined;
+            // Ugly hack to determine if this is the topmost node in a channel
+            let is_toplevel = (node.id === top_node_id);
+
+            let node_title = is_toplevel ? null : node.title;
+            await EosKnowledgeLib.call('set_header_title', {'title': channel_name, 'subtitle': node_title});
+            document.getElementById('content_title').innerHTML = node_title;
+
+            document.body.classList.remove(...document.body.classList);
+            document.body.classList.add('node');
+
+            if (is_toplevel) {
+                document.body.classList.add('node--toplevel');
             }
-            await EosKnowledgeLib.call('set_header_title', header_title);
 
             document.getElementById('content_goback').style.display =
                 breadcrumbs.length === 1 ? 'none' : 'block';
@@ -215,18 +265,22 @@
             switch (node.kind) {
             case 'topic':
                 content = renderTopic(node);
+                document.body.classList.add('node--topic');
                 break;
 
             case 'video':
                 content = isValidFile(node.main_file) ? renderVideo(node) : null;
+                document.body.classList.add('node--video');
                 break;
 
             case 'audio':
                 content = isValidFile(node.main_file) ? renderAudio(node) : null;
+                document.body.classList.add('node--audio');
                 break;
 
             case 'document':
                 content = isValidFile(node.main_file) ? renderDocument(node) : null;
+                document.body.classList.add('node--document');
                 break;
 
             case 'html5':
@@ -252,10 +306,13 @@
         async function main () {
             const metadata = await EosKnowledgeLib.call('get_metadata');
 
-            document.getElementById('channel-name').innerHTML = metadata.name;
-            header_title['title'] = metadata.name;
-            header_title['subtitle'] = undefined;
-            await EosKnowledgeLib.call('set_header_title', header_title);
+            console.log("TOP NODE", metadata.id);
+
+            top_node_id = metadata.id;
+
+            channel_name = metadata.name;
+            document.getElementById('channel-name').innerHTML = channel_name;
+            await EosKnowledgeLib.call('set_header_title', {'title': channel_name, 'subtitle': null});
 
             document.getElementById('channel-description').innerHTML = metadata.description;
 
@@ -280,9 +337,7 @@
             window.addEventListener('ekn-update-search', async event => {
                 if (event.detail.query) {
                     const result = await EosKnowledgeLib.call('search', event.detail);
-                    header_title['subtitle'] = undefined;
-                    await EosKnowledgeLib.call('set_header_title', header_title);
-                    document.getElementById('content_node').innerHTML = renderNodeList(result.results);
+                    await renderSearch(result);
                 } else {
                     await refreshContent();
                 }
