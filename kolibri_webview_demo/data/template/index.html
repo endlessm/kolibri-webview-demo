@@ -7,12 +7,48 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title></title>
     <style>
+        body {
+            padding: 0;
+            margin: 0;
+            font-family: Cantarell;
+        }
+
         .content-node-thumbnail {
             max-width: 32px;
         }
 
         #pdf-canvas {
             border: 1px solid black;
+        }
+
+        .channel-detail {
+            background-color: #4d6b86;
+            color: #f2f2f2;
+            box-shadow: inset 0 0 6rem rgba(0, 0, 0, 0.3);
+            padding: 0;
+        }
+
+        .channel-detail h1 {
+            display: none;
+            padding: 1rem 2rem 0 2rem;
+            margin: 0;
+        }
+
+        .channel-detail p {
+            display: block;
+            padding: 1rem 2rem;
+            margin: 0;
+            line-height: 1.4em;
+            font-weight: 600;
+        }
+
+        .node-content {
+            display: block;
+            padding: 1rem 2rem;
+        }
+        
+        .node-content h3 {
+            margin-top: 0;
         }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.3.200/pdf.min.js" integrity="sha256-J4Z8Fhj2MITUakMQatkqOVdtqodUlwHtQ/ey6fSsudE=" crossorigin="anonymous"></script>
@@ -70,16 +106,22 @@
     </script>
 </head>
 <body>
-    <h1 id="channel_name"></h1>
-    <h2 id="channel_description"></h2>
-    <p id="content">
-        <h3 id="content_title"></h3>
-        <a href="#" id="content_goback">Go Back</a>
-        <ul id="content_node">
+    <div class="container container--channel">
+        <div class="channel-detail">
+            <h1 id="channel-name"></h1>
+            <p id="channel-description"></p>
+        </div>
 
-        </ul>
-    </p>
+        <div class="node-content">
+            <h3 id="content_title"></h3>
+            <a href="#" id="content_goback">Go Back</a>
+            <ul id="content_node">
+            </ul>
+        </div>
+    </div>
+
     <hr />
+
     <pre id="log"></pre>
 
     <script>
@@ -210,12 +252,12 @@
         async function main () {
             const metadata = await EosKnowledgeLib.call('get_metadata');
 
-            document.getElementById('channel_name').innerHTML = metadata.name;
+            document.getElementById('channel-name').innerHTML = metadata.name;
             header_title['title'] = metadata.name;
             header_title['subtitle'] = undefined;
             await EosKnowledgeLib.call('set_header_title', header_title);
 
-            document.getElementById('channel_description').innerHTML = metadata.description;
+            document.getElementById('channel-description').innerHTML = metadata.description;
 
             document.getElementById('content_node').addEventListener('click', event => {
                 const contentNodeId = event.target.getAttribute('data-content-node-id');
