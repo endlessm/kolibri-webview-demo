@@ -58,6 +58,19 @@ class WebView(WebKit2.WebView):
             '    },\n' +
             '}));',
             None, None)
+    
+    def set_night_mode(self, enabled):
+        settings = Gtk.Settings.get_default()
+        settings.set_property('gtk-application-prefer-dark-theme', enabled)
+
+        if enabled:
+            self.run_javascript(
+            'window.dispatchEvent(new CustomEvent(\'ekn-night-mode\', {\'detail\': true}));',
+            None, None)
+        else:
+            self.run_javascript(
+            'window.dispatchEvent(new CustomEvent(\'ekn-night-mode\', {\'detail\': false}));',
+            None, None)
 
     def go_back(self):
         pass
@@ -131,6 +144,9 @@ class MainWindow(Gtk.ApplicationWindow):
         toggled = self.search_button.get_active()
         self.search_button.set_active(not toggled)
 
+    def set_night_mode(self, enabled):
+        self.webview.set_night_mode(enabled)
+
     def on_search_entry_search_changed(self, search_entry):
         self.webview.update_search(search_entry.get_text())
 
@@ -178,6 +194,14 @@ class Application(Gtk.Application):
         self.add_action(search_action)
         self.set_accels_for_action('app.search', ['<Primary>f'])
 
+        night_mode_action = Gio.SimpleAction.new_stateful(
+            'night_mode',
+            None,
+            GLib.Variant.new_boolean(False)
+        )
+        night_mode_action.connect('change_state', self.on_night_mode_action_change_state)
+        self.add_action(night_mode_action)
+
     def do_activate(self):
         # We only allow a single window and raise any existing ones
         if not self.main_window:
@@ -211,3 +235,8 @@ class Application(Gtk.Application):
     def on_search_action_activate(self, action, param):
         if self.main_window:
             self.main_window.toggle_search()
+
+    def on_night_mode_action_change_state(self, action, value):
+        if self.main_window:
+            self.main_window.set_night_mode(value)
+        action.set_state(value)
