@@ -57,12 +57,22 @@
             -webkit-user-select: auto;
             user-select: auto;
         }
+
+        .node {
+            background-color: #f9f9f9;
+            color: #333;
+
+            transition: all 300ms ease-out;
+        }
         
         .node-title-wrapper {
             display: block;
             margin: 0;
             padding: 1rem 1.5rem;
             border-bottom: dotted 1px;
+            border-color: #c8c8c8;
+
+            transition: all 300ms ease-out;
         }
 
         .node-title-wrapper h2 {
@@ -90,6 +100,58 @@
             padding: 1rem 2rem;
         }
 
+        .node-list {
+            width: 100%;
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap;
+            margin: 0 -2rem;
+        }
+
+        .node-list .node-list-item-wrapper {
+            display: block;
+            flex-shrink: 0;
+            width: 33%;
+            min-height: 6rem;
+        }
+        
+        .node-list .node-list-item {
+            display: flex;
+            flex-direction: row;
+            padding: 1rem 2rem;
+            margin: 1rem;
+            background-color: #afafaf;
+            color: #222;
+            border: 1px solid #999;
+            text-decoration: none;
+        }
+
+        .node-list .node-list-item:focus,
+        .node-list .node-list-item:hover {
+            background-color: #a1a1a1;
+            color: #111;
+        }
+
+        .node-list .node-list-item:active {
+            background-color: #9c9c9c;
+            color: #000;
+        }
+
+        .node-list .node-list-item .node-type-badge {
+            flex-shrink: 0;
+            padding-right: 1rem;
+        }
+
+        .node-list .node-list-item .node-title {
+            flex-grow: 1;
+            font-size: 1em;
+            font-weight: 700;
+        }
+
+        .node--toplevel {
+            background-color: #e1e1e7;
+        }
+
         .node--toplevel .node-content {
         }
 
@@ -98,6 +160,15 @@
         }
 
         .node--topic .node-content {
+        }
+
+        .node--video {
+            background-color: #191919;
+            color: #f2f2f2;
+        }
+
+        .node--video .node-title-wrapper {
+            border-color: #5f5f5f;
         }
 
         .node--video .node-content {
@@ -115,7 +186,47 @@
         .node--document .node-content {
         }
 
+        .node--html5 {
+            background-color: #191919;
+            color: #f2f2f2;
+        }
+
         .node--html5 .node-content {
+        }
+
+        .node--html5 .node-content iframe {
+            margin: 0 -1rem;
+            width: 100%;
+        }
+
+        .node--search .node-list {
+            flex-direction: column;
+            flex-wrap: nowrap;
+        }
+        
+        .node--search .node-list .node-list-item-wrapper {
+            width: 100%;
+            min-height: 2rem;
+        }
+        
+        .node--search .node-list .node-list-item {
+            position: relative;
+            background: none;
+            padding: 0.5rem 2rem;
+            margin: 0 0 0.5rem 0;
+            color: inherit;
+            border: none;
+        }
+        
+        .node--search .node-list .node-list-item .node-title {
+            text-decoration: underline;
+        }
+
+        .node--search .node-list .node-list-item:focus,
+        .node--search .node-list .node-list-item:hover,
+        .node--search .node-list .node-list-item:active {
+            background: none;
+            color: #000;
         }
 
         .node .channel-detail-wrapper {
@@ -131,30 +242,6 @@
             opacity: 1;
             height: 12rem;
             /* transform: translateY(0); */
-        }
-
-        .node {
-            background-color: #f9f9f9;
-            color: #333;
-            transition: all 300ms ease-out;
-        }
-
-        .node--toplevel {
-            background-color: #e1e1e7;
-        }
-
-        .node--video {
-            background-color: #191919;
-            color: #f2f2f2;
-        }
-
-        .node .node-title-wrapper {
-            border-color: #c8c8c8;
-            transition: all 300ms ease-out;
-        }
-
-        .node--video .node-title-wrapper {
-            border-color: #5f5f5f;
         }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.3.200/pdf.min.js" integrity="sha256-J4Z8Fhj2MITUakMQatkqOVdtqodUlwHtQ/ey6fSsudE=" crossorigin="anonymous"></script>
@@ -227,8 +314,6 @@
         <div id="node_content" class="node-content"></div>
     </div>
 
-    <hr />
-
     <pre id="log"></pre>
 
     <script>
@@ -272,18 +357,20 @@
                 html5: '🎲',
             };
 
-            const listInner = nodes.map(child => {
-                return `
-                    <li>
-                        ${kindCharacters[child.kind] || ''}
-                        <a href="#" data-content-node-id="${child.id}">
+            const listInner = nodes.map(child =>
+                `<div class="node-list-item-wrapper">
+                    <a href="#" class="node-list-item" data-content-node-id="${child.id}">
+                        <div class="node-type-badge">
+                            ${kindCharacters[child.kind] || ''}
+                        </div>
+                        <span class="node-title">
                             ${child.title}
-                        </a>
-                    </li>
-                `;
-            }).join('');
+                        </span>
+                    </a>
+                </div>`
+            ).join('');
 
-            return `<ul>${listInner}</ul>`;
+            return `<div class="node-list">${listInner}</div>`;
         }
 
         function renderTopic (node) {
@@ -386,8 +473,6 @@
         async function main () {
             const metadata = await EosKnowledgeLib.call('get_metadata');
 
-            console.log("TOP NODE", metadata.id);
-
             top_node_id = metadata.id;
 
             channel_name = metadata.name;
@@ -397,13 +482,19 @@
             document.getElementById('channel-description').innerHTML = metadata.description;
 
             document.getElementById('node_content').addEventListener('click', event => {
-                const contentNodeId = event.target.getAttribute('data-content-node-id');
+                const linkNode = event.target.closest('a');
+                let contentNodeId;
+
+                if (linkNode) {
+                    contentNodeId = linkNode.getAttribute('data-content-node-id');
+                }
+
                 if (contentNodeId) {
                     breadcrumbs.push(contentNodeId);
                     refreshContent();
                     event.preventDefault();
                 }
-            });
+            }, true);
 
             document.getElementById('content_goback').addEventListener('click', event => {
                 breadcrumbs.pop();
