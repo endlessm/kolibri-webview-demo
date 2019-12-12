@@ -4,11 +4,14 @@
 	"runtime-version": "5",
 	"sdk": "com.endlessm.apps.Sdk",
 	"finish-args": [
+        "--device=dri",
         "--share=ipc",
         "--socket=x11",
         "--socket=wayland",
+        "--socket=pulseaudio",
         "--share=network",
-		"--filesystem=/var/lib/kolibri/data"
+		"--filesystem=/var/lib/kolibri/data",
+        "--talk-name=org.freedesktop.Notifications"
 	],
 	"command": "kolibri_webview_demo",
 	"modules": [
