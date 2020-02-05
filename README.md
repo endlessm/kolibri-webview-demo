@@ -18,3 +18,8 @@ Alternatively, you can build and install the application as a Flatpak:
 ## Architecture
 
 TODO
+
+## Screenshot
+
+![](./Screenshot-1.png)
+![](./Screenshot-2.png)
