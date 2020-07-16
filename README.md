@@ -15,6 +15,13 @@ Alternatively, you can build and install the application as a Flatpak:
     flatpak-builder --install --user build com.endlessm.KolibriWebViewDemo.json
     flatpak run com.endlessm.KolibriWebViewDemo <channel_id>
 
+The [the kolibri flatpak](https://flathub.org/apps/details/org.learningequality.Kolibri) installs content in a different path. To use the content already installed by the kolibri flatpak, run this demo with:
+
+    flatpak run \
+      --env=KOLIBRI_HOME=~/.var/app/org.learningequality.Kolibri/data/kolibri \
+      --filesystem=~/.var/app/org.learningequality.Kolibri/data/kolibri \
+      com.endlessm.KolibriWebViewDemo 197934f144305350b5820c7c4dd8e194
+
 ## Architecture
 
 TODO
